@@ -253,9 +253,17 @@ Write a Python script to crawl property data from a Japanese real estate website
 - Use Python **3.10 or higher**.
 - Write **clean and maintainable code**.
 - You may use any libraries (e.g., BeautifulSoup, requests, etc.).
-- Reference images for UI/UX guidelines are in the `images` folder:
-  - `images/guideline1.png`
-  - `images/guideline2.png`
+
+### UI/UX Mapping Guidelines
+
+Below are two images showing how to match fields from the website UI to the JSON output object:
+
+<p align="center">
+  <img src="images/guideline1.png" alt="Guideline 1" width="600"/>
+</p>
+<p align="center">
+  <img src="images/guideline2.png" alt="Guideline 2" width="600"/>
+</p>
 
 ## Example
 
