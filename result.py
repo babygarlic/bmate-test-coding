@@ -345,6 +345,7 @@ def buildroomDetail(div, monthly_rent):
     result['building_description_zh_CN'] = building_description_multiple_languae['zh_CN']
     result['building_description_zh_TW'] = building_description_multiple_languae['zh_TW']
     
+    # xử lý check parking
     parking = building_detail['駐車場']
 
     if parking:
@@ -379,6 +380,24 @@ def buildroomDetail(div, monthly_rent):
     result['months_renewal'] = month_renewal
     numeric_renewal = month_renewal *monthly_rent
     result['numeric_renewal'] = numeric_renewal
+
+    #xử lý phí thay khóa 
+    other_fee = building_detail['その他費用']
+    
+    if  any(k in other_fee for k in ["鍵交換", "キー交換", "玄関錠交換"]):
+    
+        pattern = r"(?:鍵交換|キー交換|玄関錠交換)(?:費用|代)?\s*([\d,]+)円"
+        match = re.search(pattern, other_fee)
+        if match:
+            lock_exchange = int(match.group(1).replace(",", ""))
+        else:
+            lock_exchange = None
+    
+    else: 
+        lock_exchange = None 
+    
+    result['lock_exchange'] = lock_exchange
+
 
     # xử các checkbox
     utilities =building_detail['専有部・共用部設備']
@@ -467,7 +486,6 @@ def createCSVIdandDate(url):
         result['property_csv_id'] = f"{building_id}-{unit_id}"
     #timestamp = int(time.time())
     iso_time = datetime.now().isoformat()
- 
     result['create_date'] = str(iso_time)
 
     return result
