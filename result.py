@@ -9,6 +9,8 @@ from googletrans import Translator
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 import argparse
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 
 def translate(text: str):
@@ -195,6 +197,10 @@ def getImgandCatagory(url:str,soup:BeautifulSoup):
     # dùng selenium 
     result ={}
     driver = webdriver.Chrome()
+
+    print("Trình duyệt đang chạy tự động vui lòng k tắt trình duyệt")
+    print('Đang tải các ảnh vui lòng đợi một vài giây.............')
+    
     driver.get(url)
     index_local = 1
     images_data = soup.find('div', class_='swiper-wrapper')
@@ -205,7 +211,8 @@ def getImgandCatagory(url:str,soup:BeautifulSoup):
             result[f'image_category_{index}']= 'floorplan'
             index_local +=1
     else:
-        print("Không tìm thấy swiper-wrapper sau khi click")
+        print("Không tìm thấy swiper-wrapper")
+
     try:
         button_exterior = driver.find_element(By.CSS_SELECTOR, 'button[data-js-buildroom-slide-tab="exterior"]')
     except:
@@ -213,10 +220,10 @@ def getImgandCatagory(url:str,soup:BeautifulSoup):
         button_exterior = None
 
     if button_exterior:
-        driver.execute_script("arguments[0].scrollIntoView(true);", button_exterior)
-        time.sleep(1)
+        wait = WebDriverWait(driver, 10)
+        button_exterior = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'button[data-js-buildroom-slide-tab="exterior"]')))
         button_exterior.click() 
-        time.sleep(2) 
+        time.sleep(2)
 
         soup = BeautifulSoup(driver.page_source, "html.parser")
         div = soup.find('div', class_='swiper-wrapper')
@@ -704,12 +711,14 @@ def main():
     buiding_detail = buildroomDetail(div,property_data['monthly_rent'])
     updateData(property_data, buiding_detail)
     
-    # láy thông tin về các ảnh và catagory
-    img_catagory = getImgandCatagory(url,soup)
-    updateData(property_data,img_catagory)
-    id_and_date= createCSVIdandDate(url)
-    updateData(property_data,id_and_date)
-
+    # lấy thông tin về các ảnh và catagory
+    try:
+        img_catagory = getImgandCatagory(url,soup)
+        updateData(property_data,img_catagory)
+        id_and_date= createCSVIdandDate(url)
+        updateData(property_data,id_and_date)
+    except Exception as e:
+        print(e)
     for key,value in property_data.items():
         print(f'{key} : {value}')
     
