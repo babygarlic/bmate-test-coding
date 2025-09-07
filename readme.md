@@ -17,7 +17,7 @@ Write a Python script to crawl property data from a Japanese real estate website
 
 ```python
 {
-  "link": "URL to the property listing.",
+  "link": "URL to the property listing.", 
   "property_csv_id": "Unique identifier for the property in CSV format.",
   "postcode": "Postal code of the property.",
   "prefecture": "Prefecture where the property is located.",
@@ -71,7 +71,7 @@ Write a Python script to crawl property data from a Japanese real estate website
   "map_lat": "Latitude of the property location.",
   "map_lng": "Longitude of the property location.",
   "num_units": "Number of units in the building.",
-  "floors": "Number of floors in the building.",
+  "floors": "Number of floors in the building.", 
   "basement_floors": "Number of basement floors.",
   "parking": "Is parking available? ('Y' or 'N')",
   "parking_cost": "Cost of parking (monthly).",
