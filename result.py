@@ -338,13 +338,15 @@ def buildroomDetail(div, monthly_rent):
     if parking:
         text = parking.strip()
         no_keywords = ["無", "なし", "無し", "含まれていません", "空無"]
+        yes_keywords = ["有", "あり", "有り", "込", "利用可", "空有", "付き", "近隣", "別途契約"]
         if any(kw in text for kw in no_keywords):
             have_parking = "N"
-        yes_keywords = ["有", "あり", "有り", "込", "利用可", "空有", "付き", "近隣", "別途契約"]
-        if any(kw in text for kw in yes_keywords):
+        elif any(kw in text for kw in yes_keywords):
             have_parking = "Y"
-        if re.search(r'\d+[,，]?\d*円', text):
+        elif re.search(r'\d+[,，]?\d*円', text):
             have_parking = "Y"
+        else:
+            have_parking ='N'
     else:
         have_parking = 'N'
     
