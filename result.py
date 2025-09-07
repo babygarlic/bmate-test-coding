@@ -11,6 +11,10 @@ from selenium.webdriver.common.by import By
 import argparse
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import ElementClickInterceptedException, TimeoutException
+from selenium.webdriver.common.action_chains import ActionChains
+import time
 
 
 def translate(text: str):
@@ -192,53 +196,61 @@ def updateData(property_data: dict, data: dict):
             print(f"Updated: {key}")
         else:
             print(f"Key không khớp: {key}")
-def getImgandCatagory(url:str,soup:BeautifulSoup):
-    """ Lấy các url của ảnh và phân loại theo catagory """
-    # dùng selenium 
-    result ={}
+def getImgandCatagory(url: str, soup: BeautifulSoup):
+    """Lấy các url của ảnh và phân loại theo category"""
+    result = {}
     driver = webdriver.Chrome()
 
-    print("Trình duyệt đang chạy tự động vui lòng k tắt trình duyệt")
-    print('Đang tải các ảnh vui lòng đợi một vài giây.............')
-    
-    driver.get(url)
-    index_local = 1
-    images_data = soup.find('div', class_='swiper-wrapper')
-    if images_data:
-        images = images_data.find_all('img')
-        for index, img in enumerate(images, start=1):
-            result[f'image_url_{index}']=img['src']
-            result[f'image_category_{index}']= 'floorplan'
-            index_local +=1
-    else:
-        print("Không tìm thấy swiper-wrapper")
+    print("Trình duyệt đang chạy tự động, vui lòng không tắt trình duyệt")
+    print('Đang tải các ảnh, vui lòng đợi một vài giây...')
 
     try:
-        button_exterior = driver.find_element(By.CSS_SELECTOR, 'button[data-js-buildroom-slide-tab="exterior"]')
-    except:
-
-        button_exterior = None
-
-    if button_exterior:
-        wait = WebDriverWait(driver, 10)
-        button_exterior = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'button[data-js-buildroom-slide-tab="exterior"]')))
-        button_exterior.click() 
-        time.sleep(2)
-
+        driver.get(url)
+        driver.maximize_window() 
         soup = BeautifulSoup(driver.page_source, "html.parser")
-        div = soup.find('div', class_='swiper-wrapper')
-        if div:
-            images = div.find_all('img')
-            for index, img in enumerate(images, start=index_local):
-
-                result[f'image_url_{index}']=img['src']
-                result[f'image_category_{index}']= 'exterior'
-                
+        index_local = 1
+        images_data = soup.find('div', class_='swiper-wrapper')
+        if images_data:
+            images = images_data.find_all('img')
+            for index, img in enumerate(images, start=1):
+                result[f'image_url_{index}'] = img['src']
+                result[f'image_category_{index}'] = 'floorplan'
+                index_local += 1
         else:
-            print("Không tìm thấy swiper-wrapper sau khi click")
-    else:
-        print("Not found button")
-    driver.quit()
+            print("Không tìm thấy swiper-wrapper trên trang ban đầu")
+
+
+        try:
+            button_exterior = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, 'button[data-js-buildroom-slide-tab="exterior"]'))
+            )
+
+            driver.execute_script("arguments[0].scrollIntoView(true);", button_exterior)
+            time.sleep(0.5)  
+            try:
+                button_exterior.click()
+            except ElementClickInterceptedException:
+                print("Click intercepted, attempting JavaScript click")
+                driver.execute_script("arguments[0].click();", button_exterior)
+            
+            time.sleep(2)  
+
+            soup = BeautifulSoup(driver.page_source, "html.parser")
+            div = soup.find('div', class_='swiper-wrapper')
+            if div:
+                images = div.find_all('img')
+                for index, img in enumerate(images, start=index_local):
+                    result[f'image_url_{index}'] = img['src']
+                    result[f'image_category_{index}'] = 'exterior'
+            else:
+                print("Không tìm thấy swiper-wrapper sau khi click")
+
+        except TimeoutException:
+            print("Không tìm thấy hoặc không thể click button exterior")
+
+    finally:
+        driver.quit()
+
     return result
 
 def buildroomDetail(div, monthly_rent):
@@ -322,7 +334,7 @@ def buildroomDetail(div, monthly_rent):
         basement_floors = None
     
     result['structure'] = structure
-    result['floor_no'] = floors
+    result['floors'] = floors
     result['basement_floors'] = basement_floors
 
 
@@ -696,25 +708,26 @@ def main():
         "discount": None,
         "create_date": None,
     }
-
-    # lấy thông tin từ lớp "c-buildroom__summary-h"
-    basic_info = soup.find('h1',class_="c-buildroom__summary-h")
-    data_building = basic_info.text.strip()
-    building_info = basicInfoH1(data_building)
-    updateData(property_data, building_info)
-
-    # lấy thông tin từ lớp 'c-buildroom__summary-overview-list'
-    dl = soup.find('dl', class_='c-buildroom__summary-overview-list')
-    building_summary = buildroomSummaryOverview(dl)
-    updateData(property_data,building_summary)
-
-    #lấy các thông tin từ lớp building detail
-    div = soup.find('div', class_='c-buildroom-sect__body')
-    buiding_detail = buildroomDetail(div,property_data['monthly_rent'])
-    updateData(property_data, buiding_detail)
-    
-    # lấy thông tin về các ảnh và catagory
     try:
+        # lấy thông tin từ lớp "c-buildroom__summary-h"
+        basic_info = soup.find('h1',class_="c-buildroom__summary-h")
+        data_building = basic_info.text.strip()
+        building_info = basicInfoH1(data_building)
+        updateData(property_data, building_info)
+
+        # lấy thông tin từ lớp 'c-buildroom__summary-overview-list'
+        dl = soup.find('dl', class_='c-buildroom__summary-overview-list')
+        building_summary = buildroomSummaryOverview(dl)
+        updateData(property_data,building_summary)
+
+        #lấy các thông tin từ lớp building detail
+    
+        div = soup.find('div', class_='c-buildroom-sect__body')
+        buiding_detail = buildroomDetail(div,property_data['monthly_rent'])
+        updateData(property_data, buiding_detail)
+    
+        # lấy thông tin về các ảnh và catagory
+    
         img_catagory = getImgandCatagory(url,soup)
         updateData(property_data,img_catagory)
         id_and_date= createCSVIdandDate(url)
