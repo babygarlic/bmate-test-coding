@@ -270,6 +270,7 @@ def buildroomDetail(div, monthly_rent):
                 value = ''.join(data_div.find_all().strip() if data_div else value)
             building_detail[key] = value
 
+    # xử lý các thông tin về tuyến giao thông
     transport = building_detail['交通']
 
     lines = [line.strip() for line in transport.split('\n') if line.strip()]
@@ -292,6 +293,7 @@ def buildroomDetail(div, monthly_rent):
     available_from = building_detail['入居可能日']
     result['available_from']= available_from
 
+    # xử lý hướng tòa nhà
     facing = building_detail['方位']
 
     facing_directions = [
@@ -321,11 +323,9 @@ def buildroomDetail(div, monthly_rent):
         structure_match = re.match(r'(.+?造)', structure_floors)
         structure = structure_match.group(1) if structure_match else None
 
-        # Floors above ground
         floors_match = re.search(r'地上(\d+)階', structure_floors)
         floors = int(floors_match.group(1)) if floors_match else None
 
-        # Basement floors
         basement_match = re.search(r'地下(\d+)階', structure_floors)
         basement_floors = int(basement_match.group(1)) if basement_match else None
     else:
@@ -364,7 +364,7 @@ def buildroomDetail(div, monthly_rent):
         have_parking = 'N'
     
     result['parking']=have_parking
-
+    # xử lý phí  renewal_fee
     renewal_fee= building_detail['更新料']
 
     if renewal_fee:
@@ -484,7 +484,6 @@ def createCSVIdandDate(url):
     if url_match:
         building_id, unit_id = url_match.groups()
         result['property_csv_id'] = f"{building_id}-{unit_id}"
-    #timestamp = int(time.time())
     iso_time = datetime.now().isoformat()
     result['create_date'] = str(iso_time)
 
@@ -496,7 +495,6 @@ def main():
     parser.add_argument('--url', type=str, required=True, help='Đường dẫn URL cần xử lý')
     args = parser.parse_args()
 
-    # Lấy nội dung từ URL
     response = requests.get(args.url)
     url = args.url
     #soup = BeautifulSoup(response.content, 'html.parser')
@@ -739,13 +737,11 @@ def main():
         updateData(property_data,building_summary)
 
         #lấy các thông tin từ lớp building detail
-    
         div = soup.find('div', class_='c-buildroom-sect__body')
         buiding_detail = buildroomDetail(div,property_data['monthly_rent'])
         updateData(property_data, buiding_detail)
     
         # lấy thông tin về các ảnh và catagory
-    
         img_catagory = getImgandCatagory(url,soup)
         updateData(property_data,img_catagory)
         id_and_date= createCSVIdandDate(url)
